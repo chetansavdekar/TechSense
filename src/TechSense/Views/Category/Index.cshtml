@@ -1,0 +1,289 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
+*@
+
+@{
+}
+
+@using TechSense.POCO;
+
+@model IEnumerable<CategoryEntity>
+<form>
+    <h3>
+        @if (!ViewData["category"].Equals(Constants.BASE_CATEGORY))
+        {
+            <a asp-controller="Category" asp-action="Index">Category</a>@:&nbsp;|&nbsp;
+        }
+
+        @ViewData["categoryName"]
+    </h3>
+
+    @Html.Partial("DisplayError")
+
+    <table>
+        <tr>
+            <td>
+                @if (ViewData["category"].Equals(Constants.BASE_CATEGORY))
+                {
+                    <div class="btn-group btn-group-sm">
+                        <a asp-controller="Category" asp-action="Index" id="btnSubset" class="btn btn-primary">subset</a>
+                    </div>
+                }
+                <div class="btn-group btn-group-sm">
+                    <a href="#addCategory" id="btnAdd" class="btn btn-primary">add</a>
+                    <a href="#editCategory" id="btnEdit" class="btn btn-primary">edit</a>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <button id="btnUp" type="button" class="btn btn-primary" onclick="sortSubmit(this);">up</button>
+                    <button id="btnDown" type="button" class="btn btn-primary" onclick="sortSubmit(this);">down</button>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <br />
+    <table class="table table-nonfluid">
+        @foreach (CategoryEntity category in Model)
+        {
+            <tr>
+                <td>
+                    <input type="radio" id="rdCategory" name="rdCategory" value="@category.RowKey" />
+                </td>
+                <td>
+                    <div id="CategoryText_@category.RowKey" class="@(((Visibility)category.Visibility == Visibility.True) ? "" : " text-muted ")" >@category.Name</div>
+                    <!--(((Visibility)category.Visibility == Visibility.True) ? "" : " <div><i>(Inactive)</i></div>")-->
+                    <input type="hidden" id="ETag_@category.RowKey" value="@category.ETag" />
+                    <input type="hidden" id="Visibility_@category.RowKey" value="@category.Visibility" />
+                </td>
+            </tr>
+        }
+    </table>
+</form>
+<div id="addCategory" class="modalwindow" style="display:none;">
+    <form id="frmAdd" name="frmAdd" method="post" asp-controller="Category" asp-action="Add" onsubmit="return frmValidate('#frmAdd')">
+        <div class="input-group input-group-full-width">
+            <input type="hidden" id="PartitionKey" name="PartitionKey" value="@ViewData["category"]" />
+            <span class="input-group-addon">Name</span>
+            <input id="Name" name="Name" type="text" class="form-control" placeholder="Enter Category Name">
+        </div>
+        <br />
+        <div class="input-group input-group-full-width">
+            <span class="input-group-addon">Visibility</span>
+            <select id="Visibility" name="Visibility" class="form-control" asp-items="Html.GetEnumSelectList<Visibility>()">
+                <option value="-1">--Select visibility--</option>
+            </select>
+        </div>
+        <br />
+        <div style="text-align:center">
+            <input id="btnAddSubmit" type="submit" class="btn btn-success btn-sm" value="Add">
+            <button id="btnAddCancel" type="button" class="btn btn-sm hidemodal">Cancel</button>
+        </div>
+    </form>
+</div>
+<div id="editCategory" class="modalwindow" style="display:none;">
+    <form id="frmEdit" name="frmEdit" method="post" asp-controller="Category" asp-action="Edit" onsubmit="return frmValidate('#frmEdit')">
+        <div class="input-group input-group-full-width">
+            <input type="hidden" id="PartitionKey" name="PartitionKey" value="@ViewData["category"]" />
+            <input type="hidden" id="RowKey" name="RowKey" />
+            <input type="hidden" id="ETag" name="ETag" />
+            <span class="input-group-addon">Name</span>
+            <input id="Name" name="Name" type="text" class="form-control" placeholder="Enter Category Name">
+        </div>
+        <br />
+        <div class="input-group input-group-full-width">
+            <span class="input-group-addon">Visibility</span>
+            <select id="Visibility" name="Visibility" class="form-control" asp-items="Html.GetEnumSelectList<Visibility>()">
+                <option value="-1">--Select visibility--</option>
+            </select>
+        </div>
+        <br />
+        <div style="text-align:center">
+            <input id="btnEditSubmit" type="submit" class="btn btn-success btn-sm" value="Update">
+            <button id="btnEditCancel" type="button" class="btn btn-sm hidemodal">Cancel</button>
+        </div>
+    </form>
+</div>
+<div id="SortCategory" style="display:none;">
+    <form id="frmSort" name="frmSort" method="post" asp-controller="Category" asp-action="Sort">
+        <input type="hidden" id="up.PartitionKey" name="up.PartitionKey" value="@ViewData["category"]" />
+        <input type="hidden" id="up.RowKey" name="up.RowKey" />
+        <input type="hidden" id="up.ETag" name="up.ETag" />
+        <input type="hidden" id="up.Name" name="up.Name" />
+        <input type="hidden" id="up.Visibility" name="up.Visibility" />
+        <input type="hidden" id="down.PartitionKey" name="down.PartitionKey" value="@ViewData["category"]" />
+        <input type="hidden" id="down.RowKey" name="down.RowKey" />
+        <input type="hidden" id="down.ETag" name="down.ETag" />
+        <input type="hidden" id="down.Name" name="down.Name" />
+        <input type="hidden" id="down.Visibility" name="down.Visibility" />
+    </form>
+</div>
+
+@section scripts
+{
+<script type="text/javascript">
+        $(document).ready(function () {
+            $('input[type=radio][name=rdCategory]').on('change', function () {
+                validateCategoryButtons();
+            })
+
+            $('#btnAdd').leanModal({ top: 110, overlay: 0.45, closeButton: ".hidemodal" });
+            $('#btnEdit').leanModal({ top: 110, overlay: 0.45, closeButton: ".hidemodal" });
+
+            $('#btnAdd').click(function () {
+                $("#frmAdd").find("#Name").val("");
+                $("#frmAdd").find("#Visibility").val("1");
+            });
+
+            $('#btnEdit').click(function () {
+                $("#frmEdit").find("#RowKey").val($("input[name='rdCategory']:checked").val());
+                $("#frmEdit").find("#ETag").val($("#ETag_" + $("input[name='rdCategory']:checked").val()).val());
+                $("#frmEdit").find("#Name").val($("#CategoryText_" + $("input[name='rdCategory']:checked").val()).text());
+                $("#frmEdit").find("#Visibility").val($("#Visibility_" + $("input[name='rdCategory']:checked").val()).val());
+            });
+
+            $('#btnSubset').click(function () {
+                var category = $("input[name='rdCategory']:checked").val().split('_')[1];
+                var link = $('#btnSubset').prop('href');
+                $('#btnSubset').prop('href', link + '?Category=' + category)
+            });
+
+            validateCategoryButtons();
+        });
+
+        function sortSubmit(btn) {
+            //alert($("input[name='rdCategory']")[1].value);
+            if ($(btn).hasClass("disabled") === false) {
+                if ($("input[name='rdCategory']:checked").val()) {
+                    var checkedIndex = parseInt($("input[name='rdCategory']").index($("input[name='rdCategory']:checked")));
+                    var btnText = $(btn).text();
+
+                    var upRadioButton;
+                    var downRadioButton;
+                    if (btnText.toLowerCase() == "up") {
+                        upRadioButton = $("input[name='rdCategory']")[checkedIndex];
+                        downRadioButton = $("input[name='rdCategory']")[checkedIndex - 1];
+                    }
+                    else if (btnText.toLowerCase() == "down") {
+                        upRadioButton = $("input[name='rdCategory']")[checkedIndex + 1];
+                        downRadioButton = $("input[name='rdCategory']")[checkedIndex];
+                    }
+                    else {
+                        return;
+                    }
+
+
+                    $("#frmSort").find("#up\\.RowKey").val(upRadioButton.value);
+                    $("#frmSort").find("#up\\.ETag").val($("#ETag_" + upRadioButton.value).val());
+                    $("#frmSort").find("#up\\.Name").val($("#CategoryText_" + upRadioButton.value).text());
+                    $("#frmSort").find("#up\\.Visibility").val($("#Visibility_" + upRadioButton.value).val());
+
+                    $("#frmSort").find("#down\\.RowKey").val(downRadioButton.value);
+                    $("#frmSort").find("#down\\.ETag").val($("#ETag_" + downRadioButton.value).val());
+                    $("#frmSort").find("#down\\.Name").val($("#CategoryText_" + downRadioButton.value).text());
+                    $("#frmSort").find("#down\\.Visibility").val($("#Visibility_" + downRadioButton.value).val());
+
+                    $("#frmSort").submit();
+                }
+            }
+        }
+
+        function validateCategoryButtons() {
+            var checkedIndex;
+            if (!$("input[name='rdCategory']:checked").val()) {
+                $('#btnEdit').addClass("disabled");
+                $('#btnUp').addClass("disabled");
+                $('#btnDown').addClass("disabled");
+                $('#btnSubset').addClass("disabled");
+                //alert("nothing selected");
+            }
+            else {
+                //alert($("input[name='rdCategory']").index($("input[name='rdCategory']:checked")));
+                $('#btnEdit').removeClass("disabled");
+                $('#btnSubset').removeClass("disabled");
+
+                checkedIndex = parseInt($("input[name='rdCategory']").index($("input[name='rdCategory']:checked")));
+
+                if ($("input[name='rdCategory']").length === 1) {
+                    $('#btnUp').addClass("disabled");
+                    $('#btnDown').addClass("disabled");
+                }
+                else {
+                    if (checkedIndex === 0) {
+                        $('#btnUp').addClass("disabled");
+                        $('#btnDown').removeClass("disabled");
+                    }
+                    else if (checkedIndex === ($("input[name='rdCategory']").length - 1)) {
+                        $('#btnUp').removeClass("disabled");
+                        $('#btnDown').addClass("disabled");
+                    }
+                    else {
+                        $('#btnUp').removeClass("disabled");
+                        $('#btnDown').removeClass("disabled");
+                    }
+                }
+            }
+        }
+
+        function frmValidate(formName) {
+            if ($(formName).find("#Name").val().trim().length === 0) {
+                alert("Pease enter name.");
+                return false;
+            }
+
+            if ($(formName).find("#Visibility").length) {
+                if (!$(formName).find("#Visibility option:selected").val() ||
+                $(formName).find("#Visibility option:selected").val() === "" ||
+                $(formName).find("#Visibility option:selected").val().trim().toUpperCase() === "-1") {
+                    alert("Please select visibility.");
+                    return false;
+                }
+            }
+
+
+            $("#btnAddCancel").click();
+            return true;
+        }
+</script>
+}
+
+
+@section styles
+{
+    <style>
+        html {
+        overflow-y: scroll;
+        }
+
+                .input-group-addon {
+            width: 80px;
+            text-align: left;
+        }
+
+                        .input-group-full-width {
+            width: 100%;
+        }
+
+        #lean_overlay {
+            position: fixed;
+            z-index:100;
+            top: 0px;
+            left: 0px;
+            height:100%;
+            width:100%;
+            background: #000;
+            display: none;
+        }
+
+
+        .modalwindow {
+          width: 300px;
+          padding: 15px 20px;
+          background: #f3f6fa;
+          -webkit-border-radius: 6px;
+          -moz-border-radius: 6px;
+          border-radius: 6px;
+          -webkit-box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+          -moz-box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+          box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+}

@@ -1,0 +1,44 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+@if (ViewData["errorCode"] != null)
+{
+    string errorText = GetErrorText((string)ViewData["errorCode"]);
+
+    if (!string.IsNullOrEmpty(errorText))
+    {
+        <br /><div class="alert alert-danger">@errorText</div>
+    }
+
+}
+
+@functions
+{
+    public static string GetErrorText(string errorCode)
+    {
+        errorCode = errorCode?.Trim();
+
+        int code = 0;
+        if (errorCode != null && errorCode.Length > 0 && !errorCode.Equals("0") && int.TryParse(errorCode, out code))
+        {
+            switch (code)
+            {
+                case Constants.ERROR_CODE_PRECONDITION_FAILED:
+                    return Constants.ERROR_PRECONDITION_FAILED;
+                case Constants.ERROR_CODE_ENTITY_ALREADY_EXISTS:
+                    return Constants.ERROR_ENTITY_ALREADY_EXISTS;
+                case Constants.ERROR_CODE_ACCESS_DENIED:
+                    return Constants.ERROR_ACCESS_DENIED;
+                case Constants.ERROR_CODE_COMMON:
+                    return Constants.ERROR_COMMON;
+                default:
+                    return Constants.ERROR_COMMON;
+            }
+        }
+
+        return null;
+    }
+}

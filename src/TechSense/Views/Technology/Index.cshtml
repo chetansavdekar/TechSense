@@ -1,0 +1,895 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+@using TechSense.POCO;
+
+@model TechnologyViewModel
+<form>
+    <h3>Technology</h3>
+
+    @Html.Partial("DisplayError")
+
+    <table>
+        <tr>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <a href="#addTechnology" id="btnAdd" class="btn btn-primary disabled">add</a>
+                    <a href="#editTechnology" id="btnEdit" class="btn btn-primary disabled">edit</a>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <a href="#updateStatus" id="btnUpdateStatus" class="btn btn-primary disabled">update status</a>
+                    <a href="#statusHistory" id="btnStatusHistory" class="btn btn-primary disabled">status history</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <br />
+
+    <div style="width:500px !important;">
+        @if (Model.Categories != null)
+        {
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Category</span>
+                <select id="dlCategory" name="dlCategory" class="form-control" onchange="categoryChange(true)"
+                        asp-for="CategoryID" asp-items="Model.Categories.Select(cat => new SelectListItem() { Text = cat.Name, Value = cat.ID })">
+                    <option value="">---Select category---</option>
+                </select>
+            </div>
+        }
+
+        @if (Model.Subcategories != null)
+        {
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Sub Category</span>
+                <select id="dlSubcategory" name="dlSubcategory" class="form-control" onchange="categoryChange(false)"
+                        asp-for="SubcategoryID" asp-items="Model.Subcategories.Select(subcat => new SelectListItem() { Text = subcat.Name, Value = subcat.ID })">
+                    <option value="ALL">All</option>
+                </select>
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Technology</span>
+                <select id="dlTechnology" name="dlTechnology" class="form-control" onchange="technologyChange()"
+                        asp-for="TechnologyID" asp-items="Model.Technologies.Select(tech => new SelectListItem() { Text = tech.Name, Value = tech.ID, Group = (tech.Visibility == (int)Visibility.True ? Model.Active : Model.Inactive) })">
+                    <option value="0">---Select technology---</option>
+                </select>
+                <script type="text/javascript">
+                    var technologyHash = {};
+                    var tag = [];
+                    @foreach(TechnologyEntity technology in Model.Technologies)
+                {
+                    <text>
+                    technologyHash['@technology.ID'] = {
+                        PartitionKey: '@technology.PartitionKey',
+                        RowKey: '@technology.RowKey',
+                        ETag: '@technology.ETag',
+                        Category: '@technology.Category',
+                        Subcategory: '@technology.Subcategory',
+                        Name: '@technology.Name',
+                        NameHash: '@technology.NameHash',
+                        Tag: '@technology.Tag',
+                        Description: '@technology.Description',
+                        Priority: '@technology.Priority',
+                        PriorityText: '@technology.PriorityText',
+                        Status: '@technology.Status',
+                        StatusText: '@technology.StatusText',
+                        Visibility: '@technology.Visibility',
+                        VisibilityText: '@technology.VisibilityText'
+                    };
+                    </text>
+                }
+
+
+                    @foreach (TagEntity t in Model.TagList)
+                    {
+                        <text>
+                    tag.push({label: @Html.Raw(Json.Serialize(t.RowKey)), value:@t.ID, hv: @Html.Raw(Json.Serialize(t.RowKey.Trim().ToLower().Replace(" ", "")))});
+                    </text>
+                    }
+                </script>
+            </div>
+            <div id="DisplayTechnology" name="TechnologyDisplay" class="hidden">
+                @if (Model.SubcategoryID == null)
+                {
+                    <br />
+                    <div class="input-group input-group-full-width">
+                        <span class="input-group-addon">Sub Category</span>
+                        <label id="DisplaySubcategory" class="form-control"></label>
+                    </div>
+                }
+                <br />
+                <div class="input-group input-group-full-width">
+                    <span class="input-group-addon">Tags</span>
+                    <label id="DisplayTag" style="height: auto !important" class="form-control"></label>
+                </div>
+                <br />
+                <div class="input-group input-group-full-width">
+                    <span class="input-group-addon">Description</span>
+                    <label id="DisplayDescription" style="white-space: pre-line; height: auto !important;" class="form-control"></label>
+                </div>
+                <br />
+                <div class="input-group input-group-full-width">
+                    <span class="input-group-addon">Priority</span>
+                    <label id="DisplayPriority" class="form-control"></label>
+                </div>
+                <br />
+                <div class="input-group input-group-full-width">
+                    <span class="input-group-addon">Status</span>
+                    <label id="DisplayStatus" class="form-control"></label>
+                </div>
+                <br />
+                <div class="input-group input-group-full-width">
+                    <span class="input-group-addon">Visibility</span>
+                    <label id="DisplayVisibility" class="form-control"></label>
+                </div>
+            </div>
+        }
+    </div>
+</form>
+
+@if (Model.CategoryID != null)
+{
+    <div id="addTechnology" class="modalwindow" style="display:none;">
+        <form id="frmAdd" name="frmAdd" method="post" asp-controller="Technology" asp-action="Add" onsubmit="return frmValidate('#frmAdd', '#btnAddCancel')">
+            <div class="input-group input-group-full-width">
+                <input type="hidden" id="PartitionKey" name="PartitionKey" value="@Model.CategoryID" />
+                <input type="hidden" id="RowKey" name="RowKey" value="T_@(Model.SubcategoryID ?? "")" />
+                <span class="input-group-addon">Category</span>
+                <label class="form-control">@Model.CategoryName</label>
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Sub Category</span>
+                <input type="hidden" name="isSubcategoryInQuery" value="@((Model.SubcategoryID != null ? true : false).ToString())" />
+                @if (Model.SubcategoryID != null)
+                {
+                    <label class="form-control">@Model.SubcategoryName</label>
+                }
+                else
+                {
+                    <select id="dlAddSubcategory" name="dlAddSubcategory" class="form-control"
+                            asp-items="Model.Subcategories.Select(subcat => new SelectListItem() { Text = subcat.Name, Value = subcat.ID })">
+                        <option value="ALL">---Select subcategory---</option>
+                    </select>
+                }
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Name</span>
+                <input id="Name" name="Name" type="text" class="form-control" placeholder="Enter Technology Name">
+            </div>
+            <div style="text-align: right;margin-top: 5px">
+                <div class="btn-group btn-group-xs">
+                    <input type="button" class="btn btn-primary" value="add new tag" onclick="addTag('#frmAdd')" />
+                    <input type="hidden" id="NewTag" name="NewTag" />
+                </div>
+            </div>
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Tags</span>
+                <input id="TagAutoComplete" name="TagAutoComplete" type="text" style="width:100% !important">
+                <input type="hidden" id="Tag" name="Tag" />
+            </div>
+            <div id="divTagAutoComplete" style="margin: 2px; max-height: 60px; overflow: auto; overflow-y: auto; overflow-x:hidden;"></div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Description</span>
+                <textarea id="Description" name="Description" class="form-control" placeholder="Enter Description"></textarea>
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Priority</span>
+                <select id="Priority" name="Priority" class="form-control" asp-items="Html.GetEnumSelectList<Priority>()">
+                    <option value="0">--Select priority--</option>
+                </select>
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Status</span>
+                <select id="Status" name="Status" class="form-control" asp-items="Html.GetEnumSelectList<Status>()">
+                    <option value="0">--Select status--</option>
+                </select>
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Status Remarks</span>
+                <textarea id="StatusRemarks" name="StatusRemarks" class="form-control" placeholder="Enter Status Remark"></textarea>
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Visibility</span>
+                <select id="Visibility" name="Visibility" class="form-control" asp-items="Html.GetEnumSelectList<Visibility>()">
+                    <option value="-1">--Select visibility--</option>
+                </select>
+            </div>
+            <br />
+            <div style="text-align:center">
+                <input id="btnAddSubmit" type="submit" class="btn btn-success btn-sm" value="Add">
+                <button id="btnAddCancel" type="button" class="btn btn-sm hidemodal">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="editTechnology" class="modalwindow" style="display:none;">
+        <form id="frmEdit" name="frmEdit" method="post" asp-controller="Technology" asp-action="Edit" onsubmit="return frmValidate('#frmEdit', '#btnEditCancel')">
+            <div class="input-group input-group-full-width">
+                <input type="hidden" id="PartitionKey" name="PartitionKey" />
+                <input type="hidden" id="RowKey" name="RowKey" />
+                <input type="hidden" id="ETag" name="ETag" />
+                <input type="hidden" id="Status" name="Status" />
+                <span class="input-group-addon">Category</span>
+                <label id="EditCategory" name="EditCategory" class="form-control"></label>
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Sub Category</span>
+                <input type="hidden" name="isSubcategoryInQuery" value="@((Model.SubcategoryID != null ? true : false).ToString())" />
+                <label id="EditSubcategory" name="EditSubcategory" class="form-control"></label>
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Name</span>
+                <input id="OriginalNameHash" name="OriginalNameHash" type="hidden" />
+                <input id="Name" name="Name" type="text" class="form-control" placeholder="Enter Technology Name">
+            </div>
+            <div style="text-align: right;margin-top: 5px">
+                <div class="btn-group btn-group-xs">
+                    <input type="button" class="btn btn-primary" value="add new tag" onclick="addTag('#frmEdit')" />
+                    <input type="hidden" id="NewTag" name="NewTag" />
+                </div>
+            </div>
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Tags</span>
+                <input id="TagAutoComplete" name="TagAutoComplete" type="text" style="width:100% !important">
+                <input type="hidden" id="Tag" name="Tag" />
+            </div>
+            <div id="divTagAutoComplete" style="margin: 2px; max-height: 60px; overflow: auto; overflow-y: auto; overflow-x:hidden;"></div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Description</span>
+                <textarea id="Description" name="Description" class="form-control" placeholder="Enter Description"></textarea>
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Priority</span>
+                <select id="Priority" name="Priority" class="form-control" asp-items="Html.GetEnumSelectList<Priority>()">
+                    <option value="0">--Select priority--</option>
+                </select>
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Visibility</span>
+                <select id="Visibility" name="Visibility" class="form-control" asp-items="Html.GetEnumSelectList<Visibility>()">
+                    <option value="-1">--Select visibility--</option>
+                </select>
+            </div>
+            <br />
+            <div style="text-align:center">
+                <input id="btnEditSubmit" type="submit" class="btn btn-success btn-sm" value="Update">
+                <button id="btnEditCancel" type="button" class="btn btn-sm hidemodal">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="updateStatus" class="modalwindow" style="display:none;">
+        <form id="frmUpdateStatus" name="frmUpdateStatus" method="post" asp-controller="Technology" asp-action="UpdateStatus" onsubmit="return frmUpdateStatusValidate()">
+            <div class="input-group input-group-full-width">
+                <input type="hidden" name="isSubcategoryInQuery" value="@((Model.SubcategoryID != null ? true : false).ToString())" />
+                <input type="hidden" id="PartitionKey" name="PartitionKey" />
+                <input type="hidden" id="RowKey" name="RowKey" />
+                <input type="hidden" id="ETag" name="ETag" />
+                <input type="hidden" id="Name" name="Name" />
+                <input type="hidden" id="Tag" name="Tag" />
+                <input type="hidden" id="Description" name="Description" />
+                <input type="hidden" id="Priority" name="Priority" />
+                <input type="hidden" id="Visibility" name="Visibility" />
+                <span class="input-group-addon">Current Status</span>
+                <label id="CurrentStatus" name="CurrentStatus" class="form-control"></label>
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Status</span>
+                <select id="Status" name="Status" class="form-control" asp-items="Html.GetEnumSelectList<Status>()">
+                    <option value="0">--Select status--</option>
+                </select>
+            </div>
+            <br />
+            <div class="input-group input-group-full-width">
+                <span class="input-group-addon">Status Remarks</span>
+                <textarea id="StatusRemarks" name="StatusRemarks" class="form-control" placeholder="Enter Status Remarks"></textarea>
+            </div>
+            <br />
+            <div style="text-align:center">
+                <input id="btnUpdateStatusSubmit" type="submit" class="btn btn-success btn-sm" value="Update Status">
+                <button id="btnUpdateStatusCancel" type="button" class="btn btn-sm hidemodal">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="statusHistory" class="modalwindow" style="display:none;">
+        <form id="frmStatusHistory" name="frmStatusHistory">
+            <div id="divStatusHistoryLoadingText">Loading...</div>
+            <input type="hidden" id="statusHistoryDivID" />
+            <div id="divStatusHistory" style="max-height: 500px; overflow: auto; overflow-y: auto; overflow-x:hidden;"></div>
+            <br />
+            <div style="text-align:center">
+                <button id="btnStatusHistroyCancel" type="button" onclick="closeStatusHistory()" class="btn btn-sm hidemodal">Close</button>
+            </div>
+        </form>
+    </div>
+}
+
+@section scripts
+{
+    <script type="text/javascript">
+        //var tag = [];
+
+        $(document).ready(function () {
+            if ($("#dlSubcategory").length && (!$("#dlSubcategory").val() || $("#dlSubcategory").val() === "")) {
+                $("#dlSubcategory").val("ALL");
+            }
+
+            //$.getJSON("Tag/Get", null, function (data, status, xhr) {
+            //    tag = data;
+            //})
+
+
+            $('#btnAdd').leanModal({ top: 2, overlay: 0.45, closeButton: ".hidemodal" });
+            $('#btnEdit').leanModal({ top: 60, overlay: 0.45, closeButton: ".hidemodal" });
+
+            $('#btnUpdateStatus').leanModal({ top: 60, overlay: 0.45, closeButton: ".hidemodal" });
+            $('#btnStatusHistory').leanModal({ top: 60, overlay: 0.45, closeButton: ".hidemodal" });
+
+            $("#lean_overlay").click(function (event) { event.stopImmediatePropagation(); });
+
+
+            $('#btnAdd').click(function () {
+                if ($('#btnAdd').hasClass("disabled")) {
+                    $("#frmAdd").find("#btnAddSubmit").addClass("disabled");
+                    return;
+                }
+
+                $("#frmAdd").find("#btnAddSubmit").removeClass("disabled");
+
+                $("#frmAdd").find("#dlAddSubcategory").val("ALL");
+
+                $("#frmAdd").find("#Name").val("");
+
+                $("#frmAdd").find("#TagAutoComplete").val("");
+                $("#frmAdd").find("#Tag").val("");
+                $("#frmAdd").find("#NewTag").val("");
+                $("#frmAdd").find("#divTagAutoComplete").empty();
+
+                $("#frmAdd").find("#Description").val("");
+
+                $("#frmAdd").find("#Priority").val("2");
+
+                $("#frmAdd").find("#Status").val("1");
+
+                $("#frmAdd").find("#StatusRemarks").val("");
+
+                $("#frmAdd").find("#Visibility").val("1");
+
+                addAutocomplete("#frmAdd", $("#frmAdd").find("#TagAutoComplete"), tag, $("#frmAdd").find("#divTagAutoComplete"), $("#frmAdd").find("#Tag"));
+            });
+
+            $('#btnEdit').click(function () {
+                if ($('#btnEdit').hasClass("disabled")) {
+                    $("#frmEdit").find("#btnEditSubmit").addClass("disabled");
+                    return;
+                }
+
+                var tech = technologyHash[$("#dlTechnology option:selected").val()];
+
+                if (tech === undefined || tech === "undefined" || tech === null) {
+                    $("#frmEdit").find("#btnEditSubmit").addClass("disabled");
+                    return;
+                }
+
+                $("#frmEdit").find("#btnEditSubmit").removeClass("disabled");
+
+                $("#frmEdit").find("#PartitionKey").val(tech.PartitionKey);
+                $("#frmEdit").find("#RowKey").val(tech.RowKey);
+                $("#frmEdit").find("#ETag").val(decodeEntities(tech.ETag));
+                $("#frmEdit").find("#EditCategory").html(decodeEntities(tech.Category));
+                $("#frmEdit").find("#EditSubcategory").html(decodeEntities(tech.Subcategory));
+                $("#frmEdit").find("#Name").val(decodeEntities(tech.Name));
+                $("#frmEdit").find("#OriginalNameHash").val(decodeEntities(tech.NameHash));
+                $("#frmEdit").find("#Description").val(decodeEntities(tech.Description));
+                $("#frmEdit").find("#Priority").val(tech.Priority);
+                $("#frmEdit").find("#Status").val(tech.Status);
+                $("#frmEdit").find("#Visibility").val(tech.Visibility);
+
+                $("#frmEdit").find("#TagAutoComplete").val("");
+                var selectedTagIDs = "";
+                $("#frmEdit").find("#divTagAutoComplete").empty();
+                if (tech.Tag.length > 0) {
+                    selectedTagIDs = "|";
+                    var selectedTags = tech.Tag.split("|");
+                    for (var sti = 0; sti < selectedTags.length; sti++) {
+                        if (selectedTags[sti].trim().length > 0) {
+                            var tagText = getTagText(selectedTags[sti]);
+                            if (tagText.length > 0) {
+                                selectedTagIDs = selectedTagIDs + selectedTags[sti] + "|";
+                                var d = "<div id='T" + selectedTags[sti] + "' class='btn-group btn-group-xs' style='margin: 3px'>";
+
+                                d = d + "<input type='button' value='" + tagText + "' style='cursor: default !important; outline: 0px !important;' class='btn disabled disabled-button-color' />"
+                                d = d + "<input type='button' value='x' class='btn' style='outline: 0px !important' onclick='removeTagFromSelected(\"#frmEdit\", \"#Tag\",\"" + selectedTags[sti] + "\")' />"
+                                d = d + "</div>";
+
+                                $("#frmEdit").find("#divTagAutoComplete").append(d);
+                            }
+                        }
+                    }
+                }
+                $("#frmEdit").find("#Tag").val(selectedTagIDs);
+                $("#frmEdit").find("#NewTag").val("");
+
+
+                addAutocomplete("#frmEdit", $("#frmEdit").find("#TagAutoComplete"), tag, $("#frmEdit").find("#divTagAutoComplete"), $("#frmEdit").find("#Tag"));
+            });
+
+            $('#btnUpdateStatus').click(function () {
+                if ($('#btnUpdateStatus').hasClass("disabled")) {
+                    $("#frmUpdateStatus").find("#btnUpdateStatusSubmit").addClass("disabled");
+                    return;
+                }
+
+                var tech = technologyHash[$("#dlTechnology option:selected").val()];
+
+                if (tech === undefined || tech === "undefined" || tech === null) {
+                    $("#frmUpdateStatus").find("#btnUpdateStatusSubmit").addClass("disabled");
+                    return;
+                }
+
+                $("#frmUpdateStatus").find("#btnUpdateStatusSubmit").removeClass("disabled");
+
+                $("#frmUpdateStatus").find("#PartitionKey").val(tech.PartitionKey);
+                $("#frmUpdateStatus").find("#RowKey").val(tech.RowKey);
+                $("#frmUpdateStatus").find("#ETag").val(decodeEntities(tech.ETag));
+                $("#frmUpdateStatus").find("#CurrentStatus").html(decodeEntities(tech.StatusText));
+                $("#frmUpdateStatus").find("#Name").val(decodeEntities(tech.Name));
+                $("#frmUpdateStatus").find("#Tag").val(tech.Tag);
+                $("#frmUpdateStatus").find("#Description").val(decodeEntities(tech.Description));
+                $("#frmUpdateStatus").find("#Priority").val(tech.Priority);
+                $("#frmUpdateStatus").find("#Visibility").val(tech.Visibility);
+                $("#frmUpdateStatus").find("#Status").val("0");
+                $("#frmUpdateStatus").find("#StatusRemarks").val("");
+            });
+
+
+            $('#btnStatusHistory').click(function () {
+                $("#divStatusHistory").addClass("hidden");
+                $("#divStatusHistoryLoadingText").addClass("hidden");
+                $("#divStatusHistory").html("");
+
+                if ($('#btnStatusHistory').hasClass("disabled")) {
+                    return;
+                }
+
+                var tech = technologyHash[$("#dlTechnology option:selected").val()];
+
+                if (tech === undefined || tech === "undefined" || tech === null) {
+                    return;
+                }
+
+                var divID = tech.PartitionKey + "_" + tech.RowKey;
+                var div = $("<div id='StatusTable" + divID + "'></div>");
+                $("#divStatusHistory").append(div);
+
+                $("#statusHistoryDivID").val(divID);
+
+                $("#divStatusHistoryLoadingText").html("<div class='alert alert-info'>Loading...</div>");
+                $("#divStatusHistoryLoadingText").removeClass("hidden");
+
+                $.get("Technology/StatusHistory?PartitionKey=" + tech.PartitionKey + "&RowKey=" + tech.RowKey, function (data) {
+                    var divID = $("#statusHistoryDivID").val();
+                    if (divID.trim().length > 0 && data.indexOf("<!--" + divID + "-->") >= 0)
+                    {
+                        $("#divStatusHistory").html(data);
+                        $("#divStatusHistoryLoadingText").addClass("hidden");
+                        $("#divStatusHistory").removeClass("hidden");
+                    }
+                }).fail(function(){
+                    $("#divStatusHistoryLoadingText").html("<div class='alert alert-danger'>Error occurred. Please try again.</div>");
+                });
+            });
+
+            validateTechnologyButtons();
+
+            technologyChange();
+
+        });
+
+        function getTagText(tagID) {
+            if (!$.isNumeric(tagID)) {
+                return "";
+            }
+
+            var result = $.grep(tag, function (e) { return parseInt(e.value) === parseInt(tagID); });
+
+            if (result.length == 0) {
+                return "";
+            }
+            else {
+                return decodeEntities(result[0].label);
+            }
+        }
+
+        function getAllTagText(tagIDs) {
+            var allTagText = "";
+
+            if (tagIDs.length > 0) {
+                var selectedTags = tagIDs.split("|");
+                for (var sti = 0; sti < selectedTags.length; sti++) {
+                    if (selectedTags[sti].trim().length > 0) {
+                        var tagText = getTagText(selectedTags[sti]);
+                        if (tagText.length > 0) {
+                            allTagText = allTagText + (allTagText.length > 0 ? ", " : "") + tagText;
+                        }
+                    }
+                }
+            }
+
+            allTagText = (allTagText.trim().length === 0 ? "-" : allTagText);
+
+            return allTagText;
+        }
+
+        function decodeEntities(encodedString) {
+            var textArea = document.createElement('textarea');
+            textArea.innerHTML = encodedString;
+            return textArea.value;
+        }
+
+        function addAutocomplete(formName, $ctl, data, $ctlDivAppend, $ctlAppend) {
+            var options = {
+                data: data,
+                adjustWidth: false,
+                placeholder: "Enter Tag",
+                highlightPhrase: true,
+                getValue: "label",
+                list: {
+                    match: {
+                        enabled: true
+                    },
+                    onChooseEvent: function () {
+                        $ctl.val("");
+
+                        if ($ctlAppend.val().indexOf("|" + $ctl.getSelectedItemData().value + "|") < 0) {
+                            var d = "<div id='T" + $ctl.getSelectedItemData().value + "' class='btn-group btn-group-xs' style='margin: 3px'>";
+
+                            d = d + "<input type='button' value='" + $ctl.getSelectedItemData().label + "' style='cursor: default !important; outline: 0px !important;' class='btn disabled disabled-button-color' />"
+                            d = d + "<input type='button' value='x' class='btn' style='outline: 0px !important' onclick='removeTagFromSelected(\"" + formName + "\", \"#" + $ctlAppend.prop("id") + "\",\"" + $ctl.getSelectedItemData().value + "\")' />"
+                            d = d + "</div>";
+
+                            $ctlDivAppend.append(d);
+
+                            $ctlAppend.val($ctlAppend.val() + ($ctlAppend.val().trim().length === 0 ? "|" : "") + $ctl.getSelectedItemData().value + "|");
+                        }
+                    }
+                }
+            };
+
+            var txtBox = $ctl.easyAutocomplete(options);
+            txtBox.keypress(function (e) {
+                var code = (e.keyCode ? e.keyCode : e.which);
+                if (code == 13) {
+                    return false;
+                }
+            });
+
+            txtBox.change(function (e) { });
+
+        }
+
+        function removeTagFromSelected(formName, appendID, id) {
+            $ctlAppend = $(formName).find(appendID);
+
+            $ctlAppend.val($ctlAppend.val().replace("|" + id + "|", "|"));
+
+            $("#T" + id.trim().toLowerCase().replace(/ /g,'')).remove();
+        }
+
+        function addTag(formName)
+        {
+            var t = $(formName).find("#TagAutoComplete").val().trim();
+            var thv = t.trim().toLowerCase().replace(/ /g,'');
+
+            if (t.length === 0)
+            {
+                alert("Please enter tag.")
+                return;
+            }
+
+            var result = $.grep(tag, function (e) { return e.hv === thv; });
+
+            if (result.length > 0) {
+                alert("Tag already exists. Please select from the available list.");
+                return;
+            }
+
+            if (hasSpecialCharacters(t)){
+                alert("Tag can only contain characters, numbers, hypen and whitespace. Please enter a valid tag.")
+                return;
+            }
+
+            var nt = $(formName).find("#NewTag").val();
+
+            if (nt.trim().toLowerCase().replace(/ /g,'').indexOf(thv) >= 0){
+                alert("You have already added this new tag.");
+                return;
+            }
+
+            if (confirm("You are about to add a new tag '" + t +"'. It will be created at the time of persisting the selected technology."))
+            {
+                var d = "<div id='T" + thv + "' class='btn-group btn-group-xs' style='margin: 3px'>";
+
+                d = d + "<input type='button' value='" + t + "' style='cursor: default !important; outline: 0px !important;' class='btn disabled disabled-button-color' />"
+                d = d + "<input type='button' value='x' class='btn' style='outline: 0px !important' onclick='removeTagFromSelected(\"" + formName + "\", \"#NewTag\",\"" + t + "\")' />"
+                d = d + "</div>";
+
+                $(formName).find("#divTagAutoComplete").append(d);
+
+                $(formName).find("#NewTag").val(nt + (nt.trim().length === 0 ? "|" : "") + t + "|");
+
+                $(formName).find("#TagAutoComplete").val("");
+            }
+        }
+
+        function hasSpecialCharacters(value)
+        {
+            if(/^[a-zA-Z0-9- ]*$/.test(value) == false) {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        function closeStatusHistory(){
+            $("#statusHistoryDivID").val("");
+        }
+
+        function validateTechnologyButtons() {
+            var technologyExists = ($("#dlTechnology").length ? true : false);
+
+            var techologySelected = false;
+
+            if (technologyExists) {
+                if ($("#dlTechnology option:selected").val() &&
+                $("#dlTechnology option:selected").val() !== "" &&
+                $("#dlTechnology option:selected").val().trim().toUpperCase() !== "0") {
+                    techologySelected = true;
+                }
+            }
+
+            if (technologyExists) {
+                $('#btnAdd').removeClass("disabled");
+            }
+            else {
+                $('#btnAdd').addClass("disabled");
+            }
+
+            if (techologySelected) {
+                $('#btnEdit').removeClass("disabled");
+                $('#btnDelete').removeClass("disabled");
+                $('#btnUpdateStatus').removeClass("disabled");
+                $('#btnStatusHistory').removeClass("disabled");
+            }
+            else {
+                $('#btnEdit').addClass("disabled");
+                $('#btnDelete').addClass("disabled");
+                $('#btnUpdateStatus').addClass("disabled");
+                $('#btnStatusHistory').addClass("disabled");
+            }
+        }
+
+        function frmUpdateStatusValidate(){
+            if ($("#frmUpdateStatus").find("#Status").length) {
+                if (!$("#frmUpdateStatus").find("#Status option:selected").val() ||
+                $("#frmUpdateStatus").find("#Status option:selected").val() === "" ||
+                $("#frmUpdateStatus").find("#Status option:selected").val().trim().toUpperCase() === "0") {
+                    alert("Please select status.");
+                    return false;
+                }
+            }
+
+            $("#btnUpdateStatusCancel").click();
+            return true;
+        }
+
+        function frmValidate(formName, cancelButton) {
+            if (formName === "#frmAdd") {
+                if ($("#dlAddSubcategory").length) {
+                    if (!$("#dlAddSubcategory option:selected").val() ||
+                    $("#dlAddSubcategory option:selected").val() === "" ||
+                    $("#dlAddSubcategory option:selected").val().trim().toUpperCase() === "ALL") {
+                        alert("Please select subcategory.");
+                        return false;
+                    }
+                    else {
+                        $(formName).find("#RowKey").val("T_" + $("#dlAddSubcategory option:selected").val());
+                    }
+                }
+            }
+
+            if ($(formName).find("#Name").val().trim().length === 0) {
+                alert("Pease enter name.");
+                return false;
+            }
+
+            if ($(formName).find("#Tag").val().replace("|", "").trim().length === 0 &&
+                $(formName).find("#NewTag").val().replace("|", "").trim().length === 0) {
+                alert("Please select at least one tag.");
+                return false;
+            }
+
+            if ($(formName).find("#Priority").length) {
+                if (!$(formName).find("#Priority option:selected").val() ||
+                $(formName).find("#Priority option:selected").val() === "" ||
+                $(formName).find("#Priority option:selected").val().trim().toUpperCase() === "0") {
+                    alert("Please select priority.");
+                    return false;
+                }
+            }
+
+            if (formName === "#frmAdd") {
+                if ($(formName).find("#Status").length) {
+                    if (!$(formName).find("#Status option:selected").val() ||
+                    $(formName).find("#Status option:selected").val() === "" ||
+                    $(formName).find("#Status option:selected").val().trim().toUpperCase() === "0") {
+                        alert("Please select status.");
+                        return false;
+                    }
+                }
+            }
+
+            if ($(formName).find("#Visibility").length) {
+                if (!$(formName).find("#Visibility option:selected").val() ||
+                $(formName).find("#Visibility option:selected").val() === "" ||
+                $(formName).find("#Visibility option:selected").val().trim().toUpperCase() === "-1") {
+                    alert("Please select visibility.");
+                    return false;
+                }
+            }
+
+
+            $(cancelButton).click();
+            return true;
+        }
+
+        function categoryChange(isCategoryChanged) {
+            var link = "@Url.Action("Index", "Technology")";
+
+            if (isCategoryChanged && $("#dlSubcategory").length) {
+                $("#dlSubcategory").val("ALL");
+            }
+            if ($("#dlCategory option:selected").val() &&
+                    $("#dlCategory option:selected").val() !== "") {
+
+                link = link + "?category=" + $("#dlCategory option:selected").val();
+
+                if ($("#dlSubcategory").length &&
+                        $("#dlSubcategory option:selected").val() &&
+                        $("#dlSubcategory option:selected").val() !== "" &&
+                        $("#dlSubcategory option:selected").val().trim().toUpperCase() !== "ALL") {
+                    link = link + "&subcategory=" + $("#dlSubcategory option:selected").val();
+                }
+            }
+
+
+            window.location = link;
+        }
+
+        function technologyChange() {
+            if ($("#dlTechnology").length &&
+            $("#dlTechnology option:selected").val() &&
+            $("#dlTechnology option:selected").val() !== "" &&
+            $("#dlTechnology option:selected").val().trim().toUpperCase() !== "0") {
+
+                var tech = technologyHash[$("#dlTechnology option:selected").val()];
+
+                var $display = $("#DisplayTechnology");
+
+                if ($display.find("#DisplaySubcategory").length) {
+                    $display.find("#DisplaySubcategory").text(decodeEntities(tech.Subcategory));
+                }
+
+                $display.find("#DisplayTag").text(getAllTagText(tech.Tag));
+
+                $display.find("#DisplayDescription").html((tech.Description.length == 0 ? "-" : tech.Description));
+
+                $display.find("#DisplayPriority").text(tech.PriorityText);
+
+                $display.find("#DisplayStatus").text(tech.StatusText);
+
+                $display.find("#DisplayVisibility").text(tech.VisibilityText);
+
+                $display.removeClass("hidden");
+            }
+            else {
+                var $display = $("#DisplayTechnology");
+
+                $display.addClass("hidden");
+
+                if ($display.find("#DisplaySubcategory").length) {
+                    $display.find("#DisplaySubcategory").text("");
+                }
+                $display.find("#DisplayTag").text("");
+                $display.find("#DisplayDescription").html("");
+                $display.find("#DisplayPriority").text("");
+                $display.find("#DisplayStatus").text("");
+                $display.find("#DisplayVisibility").text("");
+            }
+
+            validateTechnologyButtons();
+        }
+
+
+    </script>
+}
+
+
+@section styles
+{
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        .input-group-addon {
+            width: 150px;
+            text-align: left;
+        }
+
+        .input-group-full-width {
+            width: 100%;
+        }
+
+        .disabled-button-color {
+            color: #000000 !important;
+            background-color: #d4d4d4 !important;
+            font-weight: bold;
+        }
+
+        #lean_overlay {
+            position: fixed;
+            z-index: 100;
+            top: 0px;
+            left: 0px;
+            height: 100%;
+            width: 100%;
+            background: #000;
+            display: none;
+        }
+
+        .status-table {
+
+        }
+
+        .modalwindow {
+            width: 500px;
+            padding: 15px 20px;
+            background: #f3f6fa;
+            -webkit-border-radius: 6px;
+            -moz-border-radius: 6px;
+            border-radius: 6px;
+            -webkit-box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+            -moz-box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .easy-autocomplete-container {
+            z-index: 999 !important;
+            max-height: 150px;
+            overflow: auto;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+    </style>
+}

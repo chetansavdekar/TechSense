@@ -1,0 +1,46 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<form asp-controller="Account" asp-action="Login" method="post">
+    <br />
+    @if ((ViewData?.ModelState?.ErrorCount ?? 0) > 0)
+    {
+        <div asp-validation-summary="All" class="alert alert-danger"></div>
+    }
+    <div>
+        <div class="input-group">
+            <span class="input-group-addon">Username</span>
+            <input type="text" id="Username" name="Username" class="form-control" />
+        </div>
+        <br />
+        <div class="input-group">
+            <span class="input-group-addon">Password</span>
+            <input type="password" id="Password" name="Password" class="form-control" />
+        </div>
+        <br />
+        <div>
+            <input type="submit" value="Login" class="btn btn-success btn-sm" />
+        </div>
+    </div>    
+</form>
+
+@section styles
+{
+<style>
+    html {
+        overflow-y: scroll;
+    }
+
+    .input-group-addon {
+        width: 90px;
+        text-align: left;
+    }
+
+    .input-group-full-width {
+        width: 100%;
+    }
+</style>
+
+}

@@ -1,0 +1,246 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+@using TechSense.POCO;
+
+@model UserViewModel
+<form>
+    <h3>User</h3>
+
+    @Html.Partial("DisplayError")
+
+    <table>
+        <tr>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <a href="#addUser" id="btnAdd" class="btn btn-primary">add</a>
+                    <a href="#editUser" id="btnEdit" class="btn btn-primary">edit</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <br />
+    <script type="text/javascript">
+        var currentUsernameHash = "";
+
+        currentUsernameHash = '@Model.CurrentUsernameHash';
+    </script>
+    <table class="table table-nonfluid">
+        @foreach (UserEntity user in Model.Users)
+        {
+            <tr>
+                <td>
+                    <input type="radio" id="rdUser" name="rdUser" value="@user.RowKey" />
+                </td>
+                <td>
+                    <div>@user.RowKey</div>
+                </td>
+            </tr>
+        }
+        </table>
+</form>
+
+<div id="addUser" class="modalwindow" style="display:none;">
+    <form id="frmAdd" name="frmAdd" method="post" asp-controller="User" asp-action="Add" onsubmit="return frmValidate('#frmAdd', '#btnAddCancel')">
+        <div class="input-group input-group-full-width">
+            <input type="hidden" id="PartitionKey" name="PartitionKey" value="User" />
+            <span class="input-group-addon">Username</span>
+            <input id="RowKey" name="RowKey" type="text" class="form-control" placeholder="Enter Username">
+        </div>
+        <br />
+        <div class="input-group input-group-full-width">
+            <span class="input-group-addon">Password</span>
+            <input id="Password" name="Password" type="text" class="form-control" placeholder="Enter Password">
+        </div>
+        <br />
+        <div style="text-align:center">
+            <input id="btnAddSubmit" type="submit" class="btn btn-success btn-sm" value="Add">
+            <button id="btnAddCancel" type="button" class="btn btn-sm hidemodal">Cancel</button>
+        </div>
+    </form>
+</div>
+
+<div id="editUser" class="modalwindow" style="display:none;">
+    <form id="frmEdit" name="frmEdit" method="post" asp-controller="User" asp-action="Edit" onsubmit="return frmValidate('#frmEdit', '#btnEditCancel')">
+        <div class="input-group input-group-full-width">
+            <input type="hidden" id="PartitionKey" name="PartitionKey" />
+            <input type="hidden" id="RowKey" name="RowKey" />
+            <span class="input-group-addon">Username</span>
+            <label id="EditUsername" name="EditUsername" class="form-control"></label>
+        </div>
+        <br />
+        <div class="input-group input-group-full-width">
+            <span class="input-group-addon">Password</span>
+            <input id="Password" name="Password" type="text" class="form-control" placeholder="Enter Password">
+        </div>
+        <br />
+        <div style="text-align:center">
+            <input id="btnEditSubmit" type="submit" class="btn btn-success btn-sm" value="Update">
+            <button id="btnEditCancel" type="button" class="btn btn-sm hidemodal">Cancel</button>
+        </div>
+    </form>
+</div>
+
+@section scripts
+{
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            $('input[type=radio][name=rdUser]').on('change', function () {
+                validateUserButtons();
+            })
+
+
+            $('#btnAdd').leanModal({ top: 60, overlay: 0.45, closeButton: ".hidemodal" });
+            $('#btnEdit').leanModal({ top: 60, overlay: 0.45, closeButton: ".hidemodal" });
+
+            $("#lean_overlay").click(function (event) { event.stopImmediatePropagation(); });
+
+            $('#btnAdd').click(function () {
+                if ($('#btnAdd').hasClass("disabled")) {
+                    $("#frmAdd").find("#btnAddSubmit").addClass("disabled");
+                    return;
+                }
+
+                $("#frmAdd").find("#btnAddSubmit").removeClass("disabled");
+
+                $("#frmAdd").find("#RowKey").val("");
+
+                $("#frmAdd").find("#Password").val("");
+            });
+
+            $('#btnEdit').click(function () {
+                if ($('#btnEdit').hasClass("disabled") || !$("input[name='rdUser']:checked").val()) {
+                    $("#frmEdit").find("#btnEditSubmit").addClass("disabled");
+                    return;
+                }
+
+                if ($("input[name='rdUser']:checked").val().trim().toLowerCase().replace(/ /g, '') !== currentUsernameHash) {
+                    $("#frmEdit").find("#btnEditSubmit").addClass("disabled");
+                    return;
+                }
+
+                $("#frmEdit").find("#btnEditSubmit").removeClass("disabled");
+
+                $("#frmEdit").find("#PartitionKey").val("User");
+                $("#frmEdit").find("#RowKey").val($("input[name='rdUser']:checked").val());
+                $("#frmEdit").find("#EditUsername").html($("input[name='rdUser']:checked").val());
+                $("#frmEdit").find("#Password").val("");
+            });
+
+            validateUserButtons();
+        });
+
+        function decodeEntities(encodedString) {
+            var textArea = document.createElement('textarea');
+            textArea.innerHTML = encodedString;
+            return textArea.value;
+        }
+
+        function hasSpecialCharacters(value, password) {
+            if (password) {
+                if (/^[a-zA-Z0-9]*$/.test(value) == false) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+            else {
+                if (/^[a-z]*$/.test(value) == false) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        }
+
+        function validateUserButtons() {
+            if (!$("input[name='rdUser']:checked").val()) {
+                $('#btnEdit').addClass("disabled");
+                //alert("nothing selected");
+            }
+            else {
+                if ($("input[name='rdUser']:checked").val().trim().toLowerCase().replace(/ /g, '') !== currentUsernameHash) {
+                    $('#btnEdit').addClass("disabled");
+                    return;
+                }
+
+                $('#btnEdit').removeClass("disabled");
+            }
+        }
+
+        function frmValidate(formName, cancelButton) {
+            if (formName === "#frmAdd") {
+                if ($(formName).find("#RowKey").val().trim().length === 0) {
+                    alert("Pease enter username.");
+                    return false;
+                }
+
+                if (hasSpecialCharacters($(formName).find("#RowKey").val(), false)) {
+                    alert("Username can only contain characters in lowercase. Please enter a valid username.");
+                    return false;
+                }
+            }
+
+            if ($(formName).find("#Password").val().trim().length === 0) {
+                alert("Pease enter password.");
+                return false;
+            }
+
+            if (hasSpecialCharacters($(formName).find("#Password").val(), true)) {
+                alert("Password can only contain characters and numbers. Please enter a valid password.");
+                return false;
+            }
+
+            $(cancelButton).click();
+            return true;
+        }
+</script>
+}
+
+
+@section styles
+{
+    <style>
+        html {
+            overflow-y: scroll;
+        }
+
+        .input-group-addon {
+            width: 150px;
+            text-align: left;
+        }
+
+        .input-group-full-width {
+            width: 100%;
+        }
+
+        #lean_overlay {
+            position: fixed;
+            z-index: 100;
+            top: 0px;
+            left: 0px;
+            height: 100%;
+            width: 100%;
+            background: #000;
+            display: none;
+        }
+
+
+        .modalwindow {
+            width: 500px;
+            padding: 15px 20px;
+            background: #f3f6fa;
+            -webkit-border-radius: 6px;
+            -moz-border-radius: 6px;
+            border-radius: 6px;
+            -webkit-box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+            -moz-box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+}
