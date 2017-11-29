@@ -26,10 +26,12 @@ namespace TechSense.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (LoginUser(login.Username, login.Password))
+                string role;
+                if (LoginUser(login.Username, login.Password, out role))
                 {
                     IList<Claim> claims = new List<Claim>();
                     claims.Add(new Claim(ClaimTypes.Name, login.Username));
+                    claims.Add(new Claim(ClaimTypes.Role, role));
 
                     var userIdentity = new ClaimsIdentity(claims, "login");
 
@@ -54,18 +56,35 @@ namespace TechSense.Controllers
             return Redirect("/Account/Login");
         }
 
-        private bool LoginUser(string username, string password)
+        public IActionResult Forbidden()
         {
+            return View();
+        }
+
+        private bool LoginUser(string username, string password, out string role)
+        {
+            role = "";
             username = username ?? "";
             password = password ?? "";
 
             if (username.Trim().ToLower().Equals("sachin") && password.Trim().Equals("Wassup123"))
             {
+                role = AccessLevel.Full.ToString();
                 return true;
             }
 
-            if (CacheHelper.GetUsers().Count(user => user.RowKey.Trim().ToLower() == username.Trim().ToLower() && user.Password.Trim() == password.Trim()) > 0)
+            UserEntity userEntity = CacheHelper.GetUsers().FirstOrDefault(user => user.RowKey.Trim().ToLower() == username.Trim().ToLower() && user.Password.Trim() == password.Trim());
+
+            if (userEntity != null)
             {
+                try
+                {
+                    role = ((AccessLevel)Enum.Parse(typeof(AccessLevel), userEntity.AccessLevel, true)).ToString();
+                }
+                catch
+                {
+                    role = AccessLevel.Read.ToString();
+                }
                 return true;
             }
 

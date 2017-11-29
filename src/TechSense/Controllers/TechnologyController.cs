@@ -13,11 +13,11 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace TechSense.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "ReadAccess")]
     [IsAuthenticatedActionFilter]
     public class TechnologyController : Controller
     {
-        // GET: /<controller>/
+        [Authorize(Policy = "FullAccess")]
         public IActionResult Index([FromQuery] int? category, [FromQuery] int? subcategory, [FromQuery] int? technology, [FromQuery] string errorCode)
         {
             TechnologyViewModel data = new POCO.TechnologyViewModel();
@@ -59,6 +59,7 @@ namespace TechSense.Controllers
             return View(data);
         }
 
+        [Authorize(Policy = "FullAccess")]
         [HttpPost]
         public IActionResult Add(TechnologyEntity technology, string StatusRemarks, bool isSubcategoryInQuery)
         {
@@ -93,6 +94,7 @@ namespace TechSense.Controllers
             return RedirectToAction("Index", new {errorCode = errorCode, category = technology.PartitionKey, subcategory = ((isSubcategoryInQuery) ? technology.SubcategoryID : ""), technology = nextID });
         }
 
+        [Authorize(Policy = "FullAccess")]
         [HttpPost]
         public IActionResult Edit(TechnologyEntity technology, string OriginalNameHash, bool isSubcategoryInQuery)
         {
@@ -129,6 +131,7 @@ namespace TechSense.Controllers
             return RedirectToAction("Index", new { errorCode = errorCode, category = technology.PartitionKey, subcategory = ((isSubcategoryInQuery) ? technology.SubcategoryID : ""), technology = technology.ID });
         }
 
+        [Authorize(Policy = "FullAccess")]
         [HttpPost]
         public IActionResult UpdateStatus(TechnologyEntity technology, string StatusRemarks, bool isSubcategoryInQuery)
         {
@@ -151,6 +154,42 @@ namespace TechSense.Controllers
             }
 
             return RedirectToAction("Index", new { errorCode = errorCode, category = technology.PartitionKey, subcategory = ((isSubcategoryInQuery) ? technology.SubcategoryID : ""), technology = technology.ID });
+        }
+
+        [Authorize(Policy = "FullAccess")]
+        public IActionResult SetDefaultUpdateByForStatusHistory(string username)
+        {
+            try
+            {
+                username = username?.Trim() ?? "";
+                if (HttpContext.User.Identity.Name.Equals("sachin") && username.Length > 0)
+                {
+                    foreach (CategoryEntity category in CacheHelper.GetCategoryList(Constants.BASE_CATEGORY))
+                    {
+                        IEnumerable<TechnologyStatusEntity> statuses = TableStorageHelper.RetrieveByRangeAsync<TechnologyStatusEntity>(Constants.TABLE_TECHNOLOGY, category.ID, "ge", "S", "lt", "T").Result;
+                        foreach (TechnologyStatusEntity status in statuses)
+                        {
+                            if (string.IsNullOrEmpty(status?.Username?.Trim()))
+                            {
+                                status.Username = username;
+                            }
+                        }
+
+                        TableStorageHelper.BatchAsync(Constants.TABLE_TECHNOLOGY, null, null, statuses.ToArray()).Wait();
+                    }
+                    ViewData["ExecutionStatus"] = "Succeed.";
+                }
+                else
+                {
+                    ViewData["ExecutionStatus"] = "Failed.";
+                }
+            }
+            catch
+            {
+                ViewData["ExecutionStatus"] = "Failed.";
+            }
+
+            return View();
         }
 
         public IActionResult StatusHistory(string PartitionKey, string RowKey)
@@ -182,6 +221,8 @@ namespace TechSense.Controllers
             entity.Status = status;
 
             entity.Remarks = statusRemarks ?? "";
+
+            entity.Username = HttpContext?.User?.Identity?.Name ?? "";
 
             return entity;
         }

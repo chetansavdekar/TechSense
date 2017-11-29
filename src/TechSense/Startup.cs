@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace TechSense
 {
@@ -33,6 +34,27 @@ namespace TechSense
             Configurations.StorageConfiguration.StorageConnectionString = Configuration["StorageConnectionString"];
             // Add framework services.
             services.AddMvc();
+
+            services.AddAuthorization(
+                                    options => options.AddPolicy(
+                                                                "ReadAccess", 
+                                                                policy => policy.RequireClaim(
+                                                                                        ClaimTypes.Role, 
+                                                                                        AccessLevel.Read.ToString(), 
+                                                                                        AccessLevel.Full.ToString()
+                                                                                        )
+                                                                )
+                                    );
+
+            services.AddAuthorization(
+                                    options => options.AddPolicy(
+                                                                "FullAccess",
+                                                                policy => policy.RequireClaim(
+                                                                                        ClaimTypes.Role,
+                                                                                        AccessLevel.Full.ToString()
+                                                                                        )
+                                                                )
+                                    );
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

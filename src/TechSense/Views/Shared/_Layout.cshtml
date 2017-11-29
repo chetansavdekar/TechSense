@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Authorization
+
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -31,11 +33,14 @@
                 <a asp-area="" asp-controller="Dashboard" asp-action="Index" class="navbar-brand">TechSense</a>
             </div>
             <div class="navbar-collapse collapse">
-                <ul class="nav navbar-nav">
-                    <li><a asp-area="" asp-controller="Technology" asp-action="Index">Technology</a></li>
-                    <li><a asp-area="" asp-controller="Category" asp-action="Index">Category</a></li>
-                    <li><a asp-area="" asp-controller="User" asp-action="Index">User</a></li>
-                </ul>
+                @if (await AuthorizationService.AuthorizeAsync(User, "FullAccess"))
+                {
+                    <ul class="nav navbar-nav">
+                        <li><a asp-area="" asp-controller="Technology" asp-action="Index">Technology</a></li>
+                        <li><a asp-area="" asp-controller="Category" asp-action="Index">Category</a></li>
+                        <li><a asp-area="" asp-controller="User" asp-action="Index">User</a></li>
+                    </ul>
+                }
                 @if (ViewData["IsAuthenticated"].ToString().Trim().ToLower() == "true")
                 {
                     <div class="nav navbar-nav pull-right">

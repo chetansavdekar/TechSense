@@ -27,7 +27,11 @@
 
         currentUsernameHash = '@Model.CurrentUsernameHash';
     </script>
-    <table class="table table-nonfluid">
+    <table class="table table-nonfluid table-bordered">
+        <tr>
+            <th colspan="2" align="center">Username</th>
+            <th align="center">Access Level</th>
+        </tr>
         @foreach (UserEntity user in Model.Users)
         {
             <tr>
@@ -37,13 +41,16 @@
                 <td>
                     <div>@user.RowKey</div>
                 </td>
+                <td>
+                    <div id="AL_@user.RowKey">@user.AccessLevel</div>
+                </td>
             </tr>
         }
         </table>
 </form>
 
 <div id="addUser" class="modalwindow" style="display:none;">
-    <form id="frmAdd" name="frmAdd" method="post" asp-controller="User" asp-action="Add" onsubmit="return frmValidate('#frmAdd', '#btnAddCancel')">
+    <form id="frmAdd" name="frmAdd" method="post" asp-controller="User" asp-action="Add" onsubmit="return frmValidate('#frmAdd', '#btnAddSubmit', '#btnAddCancel')">
         <div class="input-group input-group-full-width">
             <input type="hidden" id="PartitionKey" name="PartitionKey" value="User" />
             <span class="input-group-addon">Username</span>
@@ -55,6 +62,13 @@
             <input id="Password" name="Password" type="text" class="form-control" placeholder="Enter Password">
         </div>
         <br />
+        <div class="input-group input-group-full-width">
+            <span class="input-group-addon">Access Level</span>
+            <select id="AccessLevel" name="AccessLevel" class="form-control" asp-items="Html.GetEnumSelectList<AccessLevel>().Select(al => new SelectListItem { Text = al.Text, Value = al.Text })">
+                <option value="0">--Select access level--</option>
+            </select>
+        </div>
+        <br />
         <div style="text-align:center">
             <input id="btnAddSubmit" type="submit" class="btn btn-success btn-sm" value="Add">
             <button id="btnAddCancel" type="button" class="btn btn-sm hidemodal">Cancel</button>
@@ -63,7 +77,7 @@
 </div>
 
 <div id="editUser" class="modalwindow" style="display:none;">
-    <form id="frmEdit" name="frmEdit" method="post" asp-controller="User" asp-action="Edit" onsubmit="return frmValidate('#frmEdit', '#btnEditCancel')">
+    <form id="frmEdit" name="frmEdit" method="post" asp-controller="User" asp-action="Edit" onsubmit="return frmValidate('#frmEdit', '#btnEditSubmit', '#btnEditCancel')">
         <div class="input-group input-group-full-width">
             <input type="hidden" id="PartitionKey" name="PartitionKey" />
             <input type="hidden" id="RowKey" name="RowKey" />
@@ -74,6 +88,13 @@
         <div class="input-group input-group-full-width">
             <span class="input-group-addon">Password</span>
             <input id="Password" name="Password" type="text" class="form-control" placeholder="Enter Password">
+        </div>
+        <br />
+        <div class="input-group input-group-full-width">
+            <span class="input-group-addon">Access Level</span>
+            <select id="AccessLevel" name="AccessLevel" class="form-control" asp-items="Html.GetEnumSelectList<AccessLevel>().Select(al => new SelectListItem { Text = al.Text, Value = al.Text })">
+                <option value="0">--Select access level--</option>
+            </select>
         </div>
         <br />
         <div style="text-align:center">
@@ -109,6 +130,7 @@
                 $("#frmAdd").find("#RowKey").val("");
 
                 $("#frmAdd").find("#Password").val("");
+                $("#frmAdd").find("#AccessLevel").val("0");
             });
 
             $('#btnEdit').click(function () {
@@ -117,7 +139,8 @@
                     return;
                 }
 
-                if ($("input[name='rdUser']:checked").val().trim().toLowerCase().replace(/ /g, '') !== currentUsernameHash) {
+                if ($("input[name='rdUser']:checked").val().trim().toLowerCase().replace(/ /g, '') !== currentUsernameHash &&
+                    currentUsernameHash !== "sachin") {
                     $("#frmEdit").find("#btnEditSubmit").addClass("disabled");
                     return;
                 }
@@ -128,6 +151,7 @@
                 $("#frmEdit").find("#RowKey").val($("input[name='rdUser']:checked").val());
                 $("#frmEdit").find("#EditUsername").html($("input[name='rdUser']:checked").val());
                 $("#frmEdit").find("#Password").val("");
+                $("#frmEdit").find("#AccessLevel").val($("#AL_" + $("input[name='rdUser']:checked").val()).text());
             });
 
             validateUserButtons();
@@ -164,7 +188,8 @@
                 //alert("nothing selected");
             }
             else {
-                if ($("input[name='rdUser']:checked").val().trim().toLowerCase().replace(/ /g, '') !== currentUsernameHash) {
+                if ($("input[name='rdUser']:checked").val().trim().toLowerCase().replace(/ /g, '') !== currentUsernameHash && 
+                    currentUsernameHash !== "sachin") {
                     $('#btnEdit').addClass("disabled");
                     return;
                 }
@@ -173,7 +198,11 @@
             }
         }
 
-        function frmValidate(formName, cancelButton) {
+        function frmValidate(formName, submitButton, cancelButton) {
+            if ($(submitButton).hasClass("disabled"))
+            {
+                return false;
+            }
             if (formName === "#frmAdd") {
                 if ($(formName).find("#RowKey").val().trim().length === 0) {
                     alert("Pease enter username.");
@@ -184,17 +213,28 @@
                     alert("Username can only contain characters in lowercase. Please enter a valid username.");
                     return false;
                 }
+
+                if ($(formName).find("#Password").val().trim().length === 0) {
+                    alert("Pease enter password.");
+                    return false;
+                }
             }
 
-            if ($(formName).find("#Password").val().trim().length === 0) {
-                alert("Pease enter password.");
-                return false;
-            }
 
             if (hasSpecialCharacters($(formName).find("#Password").val(), true)) {
                 alert("Password can only contain characters and numbers. Please enter a valid password.");
                 return false;
             }
+
+            if ($(formName).find("#AccessLevel").length) {
+                if (!$(formName).find("#AccessLevel option:selected").val() ||
+                $(formName).find("#AccessLevel option:selected").val() === "" ||
+                $(formName).find("#AccessLevel option:selected").val().trim().toUpperCase() === "0") {
+                    alert("Please select access level.");
+                    return false;
+                }
+            }
+
 
             $(cancelButton).click();
             return true;

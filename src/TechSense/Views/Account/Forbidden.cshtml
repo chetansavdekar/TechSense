@@ -1,0 +1,16 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+<br /><br />
+<div class="alert alert-danger">You do not have required permissions for this operation.</div>
+<br />
+@if (ViewData["IsAuthenticated"].ToString().Trim().ToLower() == "true")
+{
+    <a asp-area="" asp-controller="Dashboard" asp-action="Index" class="btn btn-primary btn-sm">back</a>
+}
+else
+{
+    <a asp-area="" asp-controller="Dashboard" asp-action="Index" class="btn btn-primary btn-sm">login</a>
+}

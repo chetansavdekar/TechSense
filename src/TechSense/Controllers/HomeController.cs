@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace TechSense.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "ReadAccess")]
     [IsAuthenticatedActionFilter]
     public class HomeController : Controller
     {

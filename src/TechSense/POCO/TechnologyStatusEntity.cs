@@ -11,6 +11,8 @@ namespace TechSense.POCO
         private int _status;
 
         private string _remarks;
+
+        private string _username;
         public TechnologyStatusEntity()
         {
         }
@@ -51,6 +53,18 @@ namespace TechSense.POCO
             set
             {
                 _remarks = value;
+            }
+        }
+
+        public string Username
+        {
+            get
+            {
+                return _username;
+            }
+            set
+            {
+                _username = value;
             }
         }
     }

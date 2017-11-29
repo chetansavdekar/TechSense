@@ -9,6 +9,8 @@ namespace TechSense.POCO
     public class UserEntity : TableEntity
     {
         private string _password;
+
+        private string _accessLevel;
         public UserEntity()
         {
         }
@@ -37,6 +39,18 @@ namespace TechSense.POCO
             get
             {
                 return RowKey?.Trim()?.ToLower() ?? "";
+            }
+        }
+
+        public string AccessLevel
+        {
+            get
+            {
+                return _accessLevel;
+            }
+            set
+            {
+                _accessLevel = value;
             }
         }
     }

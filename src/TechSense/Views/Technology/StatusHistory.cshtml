@@ -7,24 +7,25 @@
 @using TechSense.POCO;
 
 @model IEnumerable<TechnologyStatusEntity>
-
-<!--@(ViewData["divID"])-->
-<div id="DisplayStatus_@(ViewData["divID"])" class="status-table">
+<div>
+    <!--@(ViewData["divID"])-->
     <input type="hidden" id="finished" value="@(ViewData["divID"])" />
     @if (Model != null && Model.Count() > 0)
     {
         <table style="width:100% !important;" class="table table-bordered table-nonfluid">
             <tr>
-                <th style="text-align: center;">Date</th>
-                <th style="text-align: center;">Status</th>
-                <th style="text-align: center;">Remarks</th>
+                <th width="18%" style="text-align: center;">Date</th>
+                <th width="12%" style="text-align: center;">Status</th>
+                <th width="50%" style="text-align: center;">Remarks</th>
+                <th width="20%" style="text-align: center;">Updated By</th>
             </tr>
             @foreach (TechnologyStatusEntity status in Model)
             {
                 <tr>
                     <td style="width:160px !important;">@status.Timestamp.ToString("g")</td>
                     <td style="width:70px !important;">@status.StatusText</td>
-                    <td><div style="white-space: pre-line !important;">@(!string.IsNullOrEmpty(status.Remarks?.Trim()) ? status.Remarks : "-")</div></td>
+                    <td align="left"><div style="white-space: pre-line !important;">@(!string.IsNullOrEmpty(status.Remarks?.Trim()) ? status.Remarks : "-")</div></td>
+                    <td align="left">@(!string.IsNullOrEmpty(status.Username?.Trim()) ? status.Username : "-")</td>
                 </tr>
             }
         </table>

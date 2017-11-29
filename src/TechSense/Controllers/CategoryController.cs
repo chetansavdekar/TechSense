@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace TechSense.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "FullAccess")]
     [IsAuthenticatedActionFilter]
     public class CategoryController : Controller
     {

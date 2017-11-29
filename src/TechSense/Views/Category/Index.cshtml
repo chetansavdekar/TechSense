@@ -59,7 +59,7 @@
     </table>
 </form>
 <div id="addCategory" class="modalwindow" style="display:none;">
-    <form id="frmAdd" name="frmAdd" method="post" asp-controller="Category" asp-action="Add" onsubmit="return frmValidate('#frmAdd')">
+    <form id="frmAdd" name="frmAdd" method="post" asp-controller="Category" asp-action="Add" onsubmit="return frmValidate('#frmAdd', '#btnAddSubmit', '#btnAddCancel')">
         <div class="input-group input-group-full-width">
             <input type="hidden" id="PartitionKey" name="PartitionKey" value="@ViewData["category"]" />
             <span class="input-group-addon">Name</span>
@@ -80,7 +80,7 @@
     </form>
 </div>
 <div id="editCategory" class="modalwindow" style="display:none;">
-    <form id="frmEdit" name="frmEdit" method="post" asp-controller="Category" asp-action="Edit" onsubmit="return frmValidate('#frmEdit')">
+    <form id="frmEdit" name="frmEdit" method="post" asp-controller="Category" asp-action="Edit" onsubmit="return frmValidate('#frmEdit', '#btnEditSubmit', '#btnEditCancel')">
         <div class="input-group input-group-full-width">
             <input type="hidden" id="PartitionKey" name="PartitionKey" value="@ViewData["category"]" />
             <input type="hidden" id="RowKey" name="RowKey" />
@@ -223,7 +223,11 @@
             }
         }
 
-        function frmValidate(formName) {
+        function frmValidate(formName, submitButton, cancelButton) {
+            if ($(submitButton).hasClass("disabled")) {
+                return false;
+            }
+
             if ($(formName).find("#Name").val().trim().length === 0) {
                 alert("Pease enter name.");
                 return false;
@@ -239,7 +243,7 @@
             }
 
 
-            $("#btnAddCancel").click();
+            $(cancelButton).click();
             return true;
         }
 </script>

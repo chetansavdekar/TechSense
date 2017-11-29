@@ -134,7 +134,7 @@
 @if (Model.CategoryID != null)
 {
     <div id="addTechnology" class="modalwindow" style="display:none;">
-        <form id="frmAdd" name="frmAdd" method="post" asp-controller="Technology" asp-action="Add" onsubmit="return frmValidate('#frmAdd', '#btnAddCancel')">
+        <form id="frmAdd" name="frmAdd" method="post" asp-controller="Technology" asp-action="Add" onsubmit="return frmValidate('#frmAdd', '#btnAddSubmit', '#btnAddCancel')">
             <div class="input-group input-group-full-width">
                 <input type="hidden" id="PartitionKey" name="PartitionKey" value="@Model.CategoryID" />
                 <input type="hidden" id="RowKey" name="RowKey" value="T_@(Model.SubcategoryID ?? "")" />
@@ -189,7 +189,7 @@
             <br />
             <div class="input-group input-group-full-width">
                 <span class="input-group-addon">Status</span>
-                <select id="Status" name="Status" class="form-control" asp-items="Html.GetEnumSelectList<Status>()">
+                <select id="Status" name="Status" class="form-control" asp-items="typeof(Status).GetWithOrder()">
                     <option value="0">--Select status--</option>
                 </select>
             </div>
@@ -214,7 +214,7 @@
     </div>
 
     <div id="editTechnology" class="modalwindow" style="display:none;">
-        <form id="frmEdit" name="frmEdit" method="post" asp-controller="Technology" asp-action="Edit" onsubmit="return frmValidate('#frmEdit', '#btnEditCancel')">
+        <form id="frmEdit" name="frmEdit" method="post" asp-controller="Technology" asp-action="Edit" onsubmit="return frmValidate('#frmEdit', '#btnEditSubmit', '#btnEditCancel')">
             <div class="input-group input-group-full-width">
                 <input type="hidden" id="PartitionKey" name="PartitionKey" />
                 <input type="hidden" id="RowKey" name="RowKey" />
@@ -292,7 +292,7 @@
             <br />
             <div class="input-group input-group-full-width">
                 <span class="input-group-addon">Status</span>
-                <select id="Status" name="Status" class="form-control" asp-items="Html.GetEnumSelectList<Status>()">
+                <select id="Status" name="Status" class="form-control" asp-items="typeof(Status).GetWithOrder()">
                     <option value="0">--Select status--</option>
                 </select>
             </div>
@@ -309,7 +309,7 @@
         </form>
     </div>
 
-    <div id="statusHistory" class="modalwindow" style="display:none;">
+    <div id="statusHistory" class="modalwindow-big" style="display:none;">
         <form id="frmStatusHistory" name="frmStatusHistory">
             <div id="divStatusHistoryLoadingText">Loading...</div>
             <input type="hidden" id="statusHistoryDivID" />
@@ -703,7 +703,11 @@
             return true;
         }
 
-        function frmValidate(formName, cancelButton) {
+        function frmValidate(formName, submitButton, cancelButton) {
+            if ($(submitButton).hasClass("disabled"))
+            {
+                return false;
+            }
             if (formName === "#frmAdd") {
                 if ($("#dlAddSubcategory").length) {
                     if (!$("#dlAddSubcategory option:selected").val() ||
@@ -874,6 +878,18 @@
 
         .modalwindow {
             width: 500px;
+            padding: 15px 20px;
+            background: #f3f6fa;
+            -webkit-border-radius: 6px;
+            -moz-border-radius: 6px;
+            border-radius: 6px;
+            -webkit-box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+            -moz-box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+        }
+
+            .modalwindow-big {
+            width: 550px;
             padding: 15px 20px;
             background: #f3f6fa;
             -webkit-border-radius: 6px;

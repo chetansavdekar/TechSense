@@ -12,7 +12,7 @@ using TechSense.Filters;
 
 namespace TechSense.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "ReadAccess")]
     [IsAuthenticatedActionFilter]
     public class DashboardController : Controller
     {
@@ -44,7 +44,6 @@ namespace TechSense.Controllers
             data.Top = Top?.ToString() ?? "";
 
             data.Tag = Tag?.Trim() ?? "";
-
 
             if (!string.IsNullOrEmpty(errorCode))
             {
