@@ -98,7 +98,7 @@
 
                                                     <div id="div_@(category.ID)_@(subcategory.ID)_@(@status.Value)_@(tech.ID)" class="@cls" style="margin-bottom: 5px !important">
                                                         <input id="btn_@(category.ID)_@(subcategory.ID)_@(@status.Value)_@(tech.ID)" type="button"
-                                                               class="btn btn-xs tech-button btn-block" style="white-space:normal !important; text-align:left !important; text-decoration: none;outline: 0px !important;"
+                                                               class="btn btn-xs tech-button btn-block ts-p-b-@tech.Priority.ToString()" style="white-space:normal !important; text-align:left !important; text-decoration: none;outline: 0px !important;"
                                                                value="@tech.Name" onclick="technologyClick('@(tech.ID)')" />
                                                         <script type="text/javascript">
                                                             technologyHash['@tech.ID'] = {
@@ -688,9 +688,34 @@
         {
             @:.ts-t-@s {  }
         }
-        @foreach (SelectListItem status in Html.GetEnumSelectList<Priority>())
+        @foreach (SelectListItem priority in Html.GetEnumSelectList<Priority>())
         {
-            @:.ts-p-@status.Value { }
+            
+            @:.ts-p-@priority.Value { }
+            @:.ts-p-b-@priority.Value { @Html.Raw(GetTechnologyButtonStyle(priority.Value)) }
         }
     </style>
+}
+
+@functions
+{
+    public string GetTechnologyButtonStyle(string priority)
+    {
+        if (priority == Priority.High.ToString("D"))
+        {
+            return "background-color: lightgreen; color: black";
+        }
+        else if (priority == Priority.Medium.ToString("D"))
+        {
+            return "background-color: lightpink; color: black";
+        }
+        if (priority == Priority.Low.ToString("D"))
+        {
+            return "background-color: orange; color: black";
+        }
+        else
+        {
+            return "";
+        }
+    }
 }
