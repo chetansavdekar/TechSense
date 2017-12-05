@@ -12,7 +12,7 @@ using TechSense.Filters;
 
 namespace TechSense.Controllers
 {
-    [Authorize(Policy = "ReadAccess")]
+    //[Authorize(Policy = "ReadAccess")]
     [IsAuthenticatedActionFilter]
     public class DashboardController : Controller
     {
